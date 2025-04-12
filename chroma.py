@@ -55,20 +55,10 @@ def load_chat_history(db_session, session_id):
 def extract_from_pdf(filepath):
     pages = convert_from_path(filepath)
     words = []
-    for image in pages:
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        gray = cv2.bitwise_not(gray)
-        coords = np.column_stack(np.where(gray > 0))
-        angle = cv2.minAreaRect(coords)[-1]
-        if angle < -45:
-            angle = -(90 + angle)
-        else:
-            angle = -angle
-        (h, w) = image.shape[:2]
-        center = (w // 2, h // 2)
-        M = cv2.getRotationMatrix2D(center, angle, 1.0)
-        rotated = cv2.warpAffine(image, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
-        words.append(pytesseract.image_to_string(rotated))
+    for page in pages:
+        model = genai.GenerativeModel('gemini-2.0-flash')
+        response = model.generate_content(["Extract all the text from this image, do not include any other words oustide the text:", page])
+        words.append(response.text)
     return "\n".join(words)
 
 def extract_text_from_file(filepath):
@@ -79,7 +69,9 @@ def extract_text_from_file(filepath):
         return extract_from_pdf(filepath)
     elif filepath.lower().endswith(('.png', '.jpg', '.jpeg')):
         image = Image.open(filepath)
-        return pytesseract.image_to_string(image)
+        model = genai.GenerativeModel('gemini-2.0-flash')
+        response = model.generate_content(["Extract all the text from this image, do not include any other words oustide the text:", image])
+        return response.text
     else:
         raise ValueError("Unsupported file format")
 
@@ -99,7 +91,7 @@ def chunk_text(text, max_len=500):
 
 def gemini_chat(session_id, question, db_session):
     history = load_chat_history(db_session, session_id)
-    model = genai.GenerativeModel('gemini-1.5-flash', system_instruction="You are a helpful expert tutor. Your users are asking questions about information provided by their lecture notes or other sources regarding their class. You will be shown the user's question, and the relevant information, answer the user's question using only this information.")
+    model = genai.GenerativeModel('gemini-2.0-flash', system_instruction="You are a helpful expert tutor. Your users are asking questions about information provided by their lecture notes or other sources regarding their class. You will be shown the user's question, and the relevant information, answer the user's question using only this information.")
     chat = model.start_chat(history=history)
     response = model.generate_content(question,generation_config=genai.types.GenerationConfig(
         candidate_count=1,
