@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Study Question Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-6">
+  <div class="bg-white shadow-xl rounded-2xl w-full max-w-xl p-6 space-y-4">
+    <h1 class="text-2xl font-bold text-center text-gray-800">📘 AI Study Buddy</h1>
+
+    <form method="POST" enctype="multipart/form-data" class="flex flex-col space-y-4">
+      <label class="block">
+        <span class="text-gray-700 font-medium">Upload Lecture Notes</span>
+        <input type="file" name="file" class="mt-1 block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200" required>
+      </label>
+      <button type="submit" class="bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition">Generate Questions</button>
+    </form>
+
+    {% if filename %}
+    <div class="bg-gray-100 rounded-xl p-4">
+      <p class="text-sm text-gray-500 mb-2">Uploaded: <strong>{{ filename }}</strong></p>
+    </div>
+    {% endif %}
+
+    {% if questions %}
+    <div class="space-y-3 mt-4">
+      <h2 class="text-lg font-semibold text-gray-700">🧠 Generated Questions:</h2>
+      <div class="space-y-2">
+        {% for q in questions %}
+          <div class="bg-blue-50 rounded-lg p-3 shadow-sm text-gray-800">
+            {{ q }}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</body>
+</html>
