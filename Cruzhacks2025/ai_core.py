@@ -86,12 +86,11 @@ def chunk_text(text, max_len=500):
             current = para + " "
     if current:
         chunks.append(current.strip())
-    print("Chunks:", chunks)
     return chunks
 
 def gemini_chat(session_id, question, db_session):
     history = load_chat_history(db_session, session_id)
-    model = genai.GenerativeModel('gemini-2.0-flash', system_instruction="You are a helpful expert tutor. Your users are asking questions about information provided by their lecture notes or other sources regarding their class. You will be shown the user's question, and the relevant information, answer the user's question using only this information.")
+    model = genai.GenerativeModel('gemini-2.0-flash-lite', system_instruction="You are a helpful expert tutor. Your users are asking questions about information provided by their lecture notes or other sources regarding their class. You will be shown the user's question, and the relevant information, answer the user's question using only this information.")
     chat = model.start_chat(history=history)
     response = model.generate_content(question,generation_config=genai.types.GenerationConfig(
         candidate_count=1,
@@ -115,19 +114,69 @@ def retrieve(query, chroma_collection, n_results=10):
     reranked = [doc for _, doc in sorted(zip(scores, docs), key=lambda x: x[0], reverse=True)]
     return reranked
 
-def generate_study_questions(filepaths, query, session_id):
+def generate_study_questions(filepaths, numqs, specification, session_id):
+    query = "Generate study questions based on the following lecture notes. Only include information from the lecture notes, do not include any other information. Make sure to hit on all major points. Make sure to have" + str(numqs) + " questions. Make sure to include the following specifications: " + str(specification) + ". Do not include any oother characters aside from the question itself, do not include the question numbers. Add a new lince charcter between each question.\n\n"
     db_session = init_db()
     for filepath in filepaths:
         chroma(filepath,chroma_collection)
     retrieved = retrieve(query, chroma_collection)
     combined_info = "\n".join(retrieved)
     response = gemini_chat(session_id, f"{query}\n\nContext:\n{combined_info}", db_session)
+    data = response.split('\n\n')
     db_session.close()
+    return data
 
+def evaluate_answers(questions, answers, session_id):
+    query_prefix = (
+        "Correct the following questions and answers. For each one, include:\n"
+        "- Feedback on the given answer\n"
+        "- The correct answer\n"
+        "- A brief explanation of how to get the correct answer\n"
+        "- Do not include the question itself simply follow the following format for each question\n"
+        "Feedback: \n"
+        "Correct Answer: \n"
+        "Explanation: \n"
+        "Include a newline in between responses to different questions\n\n"
+    )
+    db_session = init_db()
+    combined_prompt_parts = []
+    combined_context = []
+    for i in range(len(questions)):
+        q = questions[i]
+        a = answers[i]
+        retrieved = retrieve(q + a, chroma_collection)
+        combined_prompt_parts.append(f"Q{i+1}: {q}\nA{i+1}: {a}")
+        combined_context.extend(retrieved)
 
-FILEPATHS = ["/Users/Ruhan/Desktop/cruzhacks25/input/Math 145 - Sp 25 - Lecture 1.pdf","/Users/Ruhan/Desktop/cruzhacks25/input/Lecture 2.pdf"]
-QUERY1 = "What is a discrete dynamical system and how does it relate to chaos?"
+    full_prompt = (
+        query_prefix +
+        "\n\n".join(combined_prompt_parts) +
+        "\n\nContext:\n" +
+        "\n\n".join(set(combined_context))
+    )
+
+    response = gemini_chat(session_id, full_prompt, db_session)
+    data = response.split('\n\n')
+    db_session.close()
+    return data
+
+def answer_question(filepaths, question, session_id):
+    query = "Answer the following question based on the following lecture notes and your history talking with the user. Only include information from the lecture notes, do not include any other information. Question: " + question + "\n\n"
+    db_session = init_db()
+    for filepath in filepaths:
+        chroma(filepath,chroma_collection)
+    retrieved = retrieve(question, chroma_collection)
+    combined_info = "\n".join(retrieved)
+    response = gemini_chat(session_id, f"{query}\n\nContext:\n{combined_info}", db_session)
+    db_session.close()
+    return response
+
+FILEPATHS = ["/Users/Ruhan/Desktop/cruzhacks25/cruzhacks25/Cruzhacks2025/input/Math 145 - Sp 25 - Lecture 1.pdf","/Users/Ruhan/Desktop/cruzhacks25/cruzhacks25/Cruzhacks2025/input/Lecture 2.pdf"]
 SESSION_ID = "session1234"
 chroma_collection = chroma_client.create_collection(SESSION_ID, embedding_function=embedding_function)
 
-generate_study_questions(FILEPATHS, QUERY1, SESSION_ID)
+questions = generate_study_questions(FILEPATHS, 4, "I have trouble with dynamical systems so please include them", SESSION_ID)
+print(questions)
+answers = ["A discrete dynamical system is a system that evolves over time in discrete steps. It is a mathematical model that describes how a system changes from one state to another. It relates to chaos because chaotic systems are often modeled as discrete dynamical systems, where small changes in initial conditions can lead to vastly different outcomes.", "I'm not sure", "idk", "I have no idea"]
+response = evaluate_answers(questions, answers, SESSION_ID)
+print(response)
