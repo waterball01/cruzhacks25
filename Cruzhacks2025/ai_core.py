@@ -106,7 +106,7 @@ def retrieve(query, chroma_collection, n_results=10):
     return reranked
 
 def generate_study_questions(filepaths, specification, numqs, session_id):
-    query = "Generate study questions based on the following lecture notes. Only include information from the lecture notes, do not include any other information. Make sure to hit on all major points. Make sure to have" + str(numqs) + " questions. The use specfically requested the following: " + str(specification) + ", if it does not make sense ignore it. Do not include any oother characters aside from the question itself, do not include the question numbers. Add a new lince charcter between each question.\n\n"
+    query = "Generate study questions based on the following lecture notes. Only include information from the lecture notes, do not include any other information. Make sure to hit on all major points. Make sure to have" + str(numqs) + " questions. The user specfically requested the following: " + str(specification) + ", if it does not make sense ignore it. Do not include any oother characters aside from the question itself, do not include the question numbers. Add a new lince charcter between each question.\n\n"
     db_session = init_db()
     for filepath in filepaths:
         chroma(filepath,chroma_collection)
