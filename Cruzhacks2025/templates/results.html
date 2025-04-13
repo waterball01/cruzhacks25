@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Results</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      padding-bottom: 100px; /* space for chat input */
+    }
+  </style>
+</head>
+<body class="bg-gray-100">
+
+  <div class="max-w-3xl mx-auto p-6 bg-white min-h-screen" id="results-container">
+    <h1 class="text-2xl font-semibold mb-4">Your Results</h1>
+
+    {% for q, a, f in qa_pairs %}
+      <div class="mb-6">
+        <p class="font-medium">Question {{ loop.index }}: {{ q }}</p>
+        <p class="text-blue-700">Your Answer: {{ a }}</p>
+        <p class="text-gray-700 italic">AI Feedback: {{ f }}</p>
+      </div>
+    {% endfor %}
+
+    <div id="clarification-log"></div>
+
+    <a href="/" class="block mt-6 text-blue-500 underline">← Go back to upload page</a>
+  </div>
+
+  <!-- Floating Chat Box -->
+  <div class="fixed bottom-0 left-0 right-0 bg-white shadow-inner p-4 border-t z-50">
+    <form id="clarifyForm" class="flex gap-2">
+      <input
+        type="text"
+        id="clarifyInput"
+        placeholder="Ask a clarifying question..."
+        class="flex-1 border rounded p-2"
+        required
+      />
+      <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Send</button>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById("clarifyForm");
+    const input = document.getElementById("clarifyInput");
+    const log = document.getElementById("clarification-log");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const question = input.value.trim();
+      if (!question) return;
+
+      // Append user's question
+      const userDiv = document.createElement("div");
+      userDiv.className = "my-4";
+      userDiv.innerHTML = `<p class="text-black font-semibold">You:</p><p class="ml-4">${question}</p>`;
+      log.appendChild(userDiv);
+      input.value = "";
+
+      // Ask backend
+      const res = await fetch("/clarify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question })
+      });
+
+      const data = await res.json();
+      const aiResponse = data.answer;
+
+      // Append AI response
+      const aiDiv = document.createElement("div");
+      aiDiv.className = "my-4";
+      aiDiv.innerHTML = `<p class="text-green-700 font-semibold">AI:</p><p class="ml-4 italic">${aiResponse}</p>`;
+      log.appendChild(aiDiv);
+
+      // Scroll to bottom
+      log.scrollIntoView({ behavior: "smooth", block: "end" });
+    });
+  </script>
+</body>
+</html>

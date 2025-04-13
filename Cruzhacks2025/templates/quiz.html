@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Quiz</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6">
+  <div class="max-w-3xl mx-auto bg-white p-6 rounded shadow">
+    <h1 class="text-xl font-semibold mb-4">Your Quiz</h1>
+    <form method="POST">
+      {% for question in questions %}
+        <div class="mb-4">
+          <p class="font-medium">Question {{ loop.index }}: {{ question }}</p>
+          <input type="text" name="answer_{{ loop.index0 }}" class="w-full border p-2 rounded mt-2" required>
+        </div>
+      {% endfor %}
+      <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Submit Quiz</button>
+    </form>
+    <a href="/" class="block mt-6 text-blue-500 underline">← Go back to upload page</a>
+  </div>
+</body>
+</html>
