@@ -18,23 +18,25 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
-        file = request.files["file"]
-        filename = secure_filename(file.filename)
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(file_path)
+        files = request.files.getlist("file")
+        file_paths = []
+
+        for file in files:
+            if file and file.filename:
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(file_path)
+                file_paths.append(file_path)
 
         question_count = int(request.form["question_count"])
         prompt = request.form["prompt"]
 
-        # Store in session
-        session["file_path"] = file_path
+        session["file_paths"] = file_paths
         session["question_count"] = question_count
         session["prompt"] = prompt
 
-        # Generate questions
-        print(file_path)
-        print("FILE AS STRING + " + str(file_path) + "\n\n\n\n")
-        questions = generate_study_questions([file_path], prompt, question_count, session_id=90210)
+        print("FILES:", file_paths)
+        questions = generate_study_questions(file_paths, prompt, question_count, session_id=90210)
         session["questions"] = questions
 
         return redirect(url_for("quiz"))
