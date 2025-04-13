@@ -152,7 +152,7 @@ def evaluate_answers(questions, answers, session_id):
     return data
 
 def answer_question(question, session_id):
-    query = "Answer the following question based on the following lecture notes and your history talking with the user. Only include information from the lecture notes, do not include any other information. Question: " + question + "\n\n"
+    query = "Answer the following question based on the following lecture notes and your history talking with the user. Only include information from the lecture notes, do not include any other information. Question: " + question + ". Make sure you answer the question to the best of your ability, make sure you use the history of the chat if you dont have that say no history.\n\n"
     db_session = init_db()
     retrieved = retrieve(question, chroma_collection)
     combined_info = "\n".join(retrieved)
